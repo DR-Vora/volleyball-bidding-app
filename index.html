@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Panel - Volleyball Bidding</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Admin Panel</h1>
+  <form id="setupForm">
+    <input type="text" placeholder="Captain 1 Name" id="captain1" required>
+    <input type="text" placeholder="Captain 2 Name" id="captain2" required>
+    <input type="number" placeholder="Budget per Captain" id="budget" required>
+    <textarea placeholder="Enter players (name, role, position per line)" id="players" required></textarea>
+    <button type="submit">Start Bidding</button>
+  </form>
+  <p>After setup, send these links to captains:</p>
+  <ul id="captainLinks"></ul>
+  <script src="script.js"></script>
+</body>
+</html>
