@@ -1,14 +1,35 @@
+<!-- captain.html (Captain Bidding Page) -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Captain Bidding</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Bidding Panel</h1>
-  <p id="captainName"></p>
-  <p>Budget: ₹<span id="budgetAmount"></span></p>
-  <div id="playerList"></div>
+  <div class="captain-container">
+    <h1>Captain Bidding Panel</h1>
+    <h2 id="captainNameDisplay"></h2>
+    <div id="currentPlayer"></div>
+    <div id="bidTimer"></div>
+
+    <div class="bid-buttons">
+      <button onclick="placeBid(50)">$50</button>
+      <button onclick="placeBid(100)">$100</button>
+      <button onclick="placeBid(500)">$500</button>
+    </div>
+
+    <div id="budget" style="margin-top:10px; font-weight: bold;">Remaining Budget: $10000</div>
+
+    <h4>Upcoming Players:</h4>
+    <div id="upcomingPlayers"></div>
+
+
+    <h3>Your Team</h3>
+    <ul id="yourTeam"></ul>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>

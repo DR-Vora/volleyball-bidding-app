@@ -1,20 +1,64 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Admin Panel - Volleyball Bidding</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Volleyball Auction</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>Admin Panel</h1>
-  <form id="setupForm">
-    <input type="text" placeholder="Captain 1 Name" id="captain1" required>
-    <input type="text" placeholder="Captain 2 Name" id="captain2" required>
-    <input type="number" placeholder="Budget per Captain" id="budget" required>
-    <textarea placeholder="Enter players (name, role, position per line)" id="players" required></textarea>
-    <button type="submit">Start Bidding</button>
-  </form>
-  <p>After setup, send these links to captains:</p>
-  <ul id="captainLinks"></ul>
+  <div class="admin-container">
+    <h1>🏐 Volleyball Auction - Admin Panel</h1>
+
+    <div class="form-section">
+      <label>Captain 1 Name: <input id="captain1" type="text"></label>
+      <label>Captain 1 Budget: <input id="budget1" type="number" value="10000"></label>
+      <label>Captain 2 Name: <input id="captain2" type="text"></label>
+      <label>Captain 2 Budget: <input id="budget2" type="number" value="10000"></label><br>
+
+      <button onclick="generateLinks()">Generate Links</button>
+      <div id="captainLinks"></div>
+    </div>
+
+    <div class="form-section">
+      <h3>Add Player</h3>
+      <label>Name: <input type="text" id="pName" /></label>
+      <label>Position: <input type="text" id="pPos" /></label>
+      <label>Base Price: <input type="number" id="pBase" /></label>
+      <button onclick="addPlayer()">Add Player</button>
+      <ul id="playerList"></ul>
+    </div>
+
+    <div class="form-section">
+      <button onclick="startAuction()">Start Auction</button>
+      <button onclick="nextPlayer()">Next Player</button>
+    </div>
+
+    <div class="form-section">
+      <h3>Control Bidding</h3>
+      <label><input type="checkbox" id="c1Allowed" checked> Allow Captain 1</label>
+      <label><input type="checkbox" id="c2Allowed" checked> Allow Captain 2</label>
+    </div>
+
+    <div id="currentPlayerDisplay"></div>
+    <div id="bidTimer"></div>
+
+
+    <div class="teams">
+      <div>
+        <h3 id="team1Name">Captain 1</h3>
+        <ul id="team1List"></ul>
+      </div>
+      <div>
+        <h3 id="team2Name">Captain 2</h3>
+        <ul id="team2List"></ul>
+      </div>
+    </div>
+    <button onclick="resetAuction()">Exit & Reset Auction</button>
+
+  </div>
+  
+
   <script src="script.js"></script>
 </body>
 </html>

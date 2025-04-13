@@ -1,21 +1,30 @@
+<!-- viewer.html (Viewer Page) -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Live Team View</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Viewer - Live Auction</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Live Teams</h1>
-  <div class="teams">
-    <div>
-      <h2 id="team1Name">Team 1</h2>
-      <ul id="team1List"></ul>
-    </div>
-    <div>
-      <h2 id="team2Name">Team 2</h2>
-      <ul id="team2List"></ul>
+  <div class="viewer-container">
+    <h1>Live Volleyball Auction</h1>
+
+    <div id="livePlayer"></div>
+
+    <div class="teams">
+      <div>
+        <h3 id="team1Viewer">Captain 1</h3>
+        <ul id="team1ViewerList"></ul>
+      </div>
+      <div>
+        <h3 id="team2Viewer">Captain 2</h3>
+        <ul id="team2ViewerList"></ul>
+      </div>
     </div>
   </div>
+
   <script src="script.js"></script>
 </body>
 </html>

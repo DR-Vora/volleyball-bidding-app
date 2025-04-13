@@ -1,24 +1,50 @@
 body {
-  font-family: sans-serif;
+  font-family: Arial, sans-serif;
+  background: #f4f4f4;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-container, .captain-container, .viewer-container {
   padding: 20px;
-}
-h1 {
-  text-align: center;
-}
-form, .teams {
-  max-width: 600px;
+  max-width: 1000px;
   margin: auto;
+  background: white;
+  margin-top: 20px;
+  border-radius: 10px;
 }
+
+.form-section {
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+  margin-bottom: 10px;
+}
+
+button {
+  margin-right: 10px;
+  padding: 10px;
+  cursor: pointer;
+}
+
 .teams {
   display: flex;
   justify-content: space-between;
-  gap: 20px;
+  margin-top: 30px;
 }
+
 ul {
-  list-style-type: none;
+  list-style: none;
   padding: 0;
 }
-button {
-  margin-top: 10px;
-  padding: 10px 20px;
+
+.bid-buttons button {
+  font-size: 16px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  margin: 5px;
+  border-radius: 5px;
 }
