@@ -1,50 +1,182 @@
 body {
-  font-family: Arial, sans-serif;
-  background: #f4f4f4;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #e9f0f7;
   margin: 0;
   padding: 0;
+  color: #333;
 }
 
 .admin-container, .captain-container, .viewer-container {
-  padding: 20px;
-  max-width: 1000px;
-  margin: auto;
-  background: white;
-  margin-top: 20px;
-  border-radius: 10px;
+  padding: 30px 40px;
+  max-width: 900px;
+  margin: 30px auto;
+  background: #ffffff;
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease;
+}
+
+.admin-container:hover, .captain-container:hover, .viewer-container:hover {
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+}
+
+h1, h2, h3, h4 {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 15px;
+}
+
+h1 {
+  font-size: 2.5rem;
+  border-bottom: 3px solid #3498db;
+  padding-bottom: 10px;
+}
+
+h2 {
+  font-size: 1.8rem;
+  color: #2980b9;
+}
+
+h3 {
+  font-size: 1.4rem;
+  margin-top: 30px;
+  border-bottom: 2px solid #bdc3c7;
+  padding-bottom: 8px;
+}
+
+h4 {
+  font-size: 1.1rem;
+  color: #7f8c8d;
+  margin-top: 25px;
 }
 
 .form-section {
-  margin-bottom: 20px;
+  margin-bottom: 25px;
 }
 
 label {
   display: block;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #34495e;
 }
 
 button {
-  margin-right: 10px;
-  padding: 10px;
+  margin-right: 12px;
+  padding: 12px 22px;
   cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  background: #3498db;
+  color: white;
+  box-shadow: 0 4px 8px rgba(52, 152, 219, 0.4);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+button:hover {
+  background: #2980b9;
+  box-shadow: 0 6px 14px rgba(41, 128, 185, 0.6);
+}
+
+.players-container {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.upcoming-players, .your-team {
+  flex: 1;
+  margin-right: 20px;
+}
+
+.upcoming-players:last-child, .your-team:last-child {
+  margin-right: 0;
 }
 
 .teams {
   display: flex;
   justify-content: space-between;
-  margin-top: 30px;
+  margin-top: 35px;
+  gap: 20px;
+}
+
+.teams > div {
+  background: #f7f9fc;
+  padding: 15px 20px;
+  border-radius: 12px;
+  box-shadow: inset 0 0 8px rgba(0,0,0,0.05);
+  flex: 1;
 }
 
 ul {
   list-style: none;
   padding: 0;
+  margin-top: 10px;
+}
+
+ul li {
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  background: #ecf0f1;
+  border-radius: 6px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.bid-buttons {
+  margin-top: 20px;
 }
 
 .bid-buttons button {
   font-size: 16px;
-  background: #4CAF50;
+  background: #27ae60;
   color: white;
   border: none;
   margin: 5px;
-  border-radius: 5px;
+  border-radius: 8px;
+  padding: 12px 25px;
+  box-shadow: 0 4px 10px rgba(39, 174, 96, 0.5);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.bid-buttons button:hover {
+  background: #1e8449;
+  box-shadow: 0 6px 14px rgba(30, 132, 73, 0.7);
+}
+
+#budget {
+  margin-top: 15px;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: #c0392b;
+}
+
+#currentPlayer, #bidTimer, #upcomingPlayers, #livePlayer {
+  margin-top: 20px;
+  padding: 15px;
+  background: #d6eaf8;
+  border-radius: 10px;
+  font-weight: 600;
+  color: #154360;
+  box-shadow: inset 0 0 8px rgba(21, 67, 96, 0.2);
+  min-height: 50px;
+}
+
+/* Placeholder image style if needed */
+.placeholder-img {
+  width: 100%;
+  height: 200px;
+  background: #bdc3c7;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7f8c8d;
+  font-size: 1.2rem;
+  font-style: italic;
+  user-select: none;
+  margin-top: 20px;
 }
