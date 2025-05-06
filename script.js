@@ -1,10 +1,27 @@
-// script.js - Synced Auction with Timer, Budget, and Captain Display
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyDbRz9x-oPOrdx1kNuQR9xxsOlBT2spC1I",
+  authDomain: "volleyball-bidding-app.firebaseapp.com",
+  projectId: "volleyball-bidding-app",
+  storageBucket: "volleyball-bidding-app.firebasestorage.app",
+  messagingSenderId: "1058330685866",
+  appId: "1:1058330685866:web:884d60835ff580e217fbd3"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auctionStateRef = ref(db, 'auctionData');
+
+// ____________________________________________________________ //
 
 let players = [];
 let currentIndex = -1;
 let currentBid = 0;
 let currentCaptain = '';
-let currentTimer;
 let timerEndTime = null;
 
 let teams = {
@@ -13,8 +30,8 @@ let teams = {
 };
 
 let caps = {
-  c1: '',
-  c2: ''
+  c1: 'Captain 1',
+  c2: 'Captain 2'
 };
 
 let budgets = {
@@ -22,8 +39,9 @@ let budgets = {
   captain2: 10000
 };
 
-function saveState() {
-  localStorage.setItem('volleyAuction', JSON.stringify({
+// Function to write the current state to Firebase
+function updateFirebaseState() {
+  const state = {
     players,
     currentIndex,
     currentBid,
@@ -32,38 +50,56 @@ function saveState() {
     caps,
     budgets,
     timerEndTime
-  }));
-}
-
-function loadState() {
-  const data = JSON.parse(localStorage.getItem('volleyAuction'));
-  if (data) {
-    players = data.players || [];
-    currentIndex = data.currentIndex ?? -1;
-    currentBid = data.currentBid || 0;
-    currentCaptain = data.currentCaptain || '';
-    teams = data.teams || { captain1: [], captain2: [] };
-    caps = data.caps || { c1: '', c2: '' };
-    budgets = data.budgets || { captain1: 10000, captain2: 10000 };
-    timerEndTime = data.timerEndTime || null;
-  }
+  };
+  set(auctionStateRef, state);
 }
 
 function generateLinks() {
-  caps.c1 = document.getElementById('captain1').value;
-  caps.c2 = document.getElementById('captain2').value;
+  try {
+    const captain1Input = document.getElementById('captain1');
+    const captain2Input = document.getElementById('captain2');
+    const budget1Input = document.getElementById('budget1');
+    const budget2Input = document.getElementById('budget2');
+    const linksDiv = document.getElementById('captainLinks');
 
-  budgets.captain1 = parseInt(document.getElementById('budget1').value) || 10000;
-  budgets.captain2 = parseInt(document.getElementById('budget2').value) || 10000;
+    if (!captain1Input || !captain2Input || !budget1Input || !budget2Input || !linksDiv) {
+      console.error("generateLinks: One or more required HTML elements (captain inputs, budget inputs, or linksDiv) were not found.");
+      alert("Error: Could not find necessary HTML elements to generate links. Please check the console.");
+      return;
+    }
 
-  const base = window.location.origin + window.location.pathname.replace('index.html', '');
-  const linksDiv = document.getElementById('captainLinks');
-  linksDiv.innerHTML = `
-    <p>Captain 1: <input id="c1Link" value="${base}captain.html?c=1" readonly /> <button onclick="copyLink('c1Link')">Copy</button></p>
-    <p>Captain 2: <input id="c2Link" value="${base}captain.html?c=2" readonly /> <button onclick="copyLink('c2Link')">Copy</button></p>
-    <p>Viewer Link: <input id="viewerLink" value="${base}view.html" readonly /> <button onclick="copyLink('viewerLink')">Copy</button></p>
-  `;
-  saveState();
+    caps.c1 = captain1Input.value || 'Captain 1';
+    caps.c2 = captain2Input.value || 'Captain 2';
+
+    budgets.captain1 = parseInt(budget1Input.value) || 10000;
+    budgets.captain2 = parseInt(budget2Input.value) || 10000;
+
+    // The existing base URL calculation logic is generally robust.
+    // window.location.origin: e.g., "http://localhost:3000"
+    // window.location.pathname: e.g., "/", "/index.html", "/app/", "/app/index.html"
+    // replace('index.html', ''): removes "index.html" if present at the end.
+    // replace(/\/$/, ''): removes a trailing slash, unless it's the root path "/".
+    // For root path "/": replace(/\/$/, '') results in an empty string.
+    // For path "/app/": replace(/\/$/, '') results in "/app".
+    const pathPart = window.location.pathname
+      .replace(/index\.html$/, '') // More robustly remove index.html only from the end
+      .replace(/\/$/, ''); // Remove trailing slash
+    
+    // base will be like "http://localhost:3000" or "http://localhost:3000/app"
+    const base = window.location.origin + pathPart;
+
+    linksDiv.innerHTML = `
+      <p>Captain 1: <input id="c1Link" value="${base}/captain.html?c=1" readonly /> <button onclick="copyLink('c1Link')">Copy</button></p>
+      <p>Captain 2: <input id="c2Link" value="${base}/captain.html?c=2" readonly /> <button onclick="copyLink('c2Link')">Copy</button></p>
+      <p>Viewer Link: <input id="viewerLink" value="${base}/view.html" readonly /> <button onclick="copyLink('viewerLink')">Copy</button></p>
+    `;
+    // console.log('Generated links with base:', base); // For debugging
+    updateFirebaseState();
+
+  } catch (error) {
+    console.error("Error in generateLinks function:", error);
+    alert("An error occurred while generating links. Please check the browser console for more details.");
+  }
 }
 
 function copyLink(id) {
@@ -76,37 +112,62 @@ function addPlayer() {
   const name = document.getElementById('pName').value;
   const pos = document.getElementById('pPos').value;
   const base = Number(document.getElementById('pBase').value);
-  if (name && pos && base) {
-    players.push({ name, pos, base, sold: false });
-    document.getElementById('playerList').innerHTML += `<li>${name} (${pos}) - $${base}</li>`;
+  if (name && pos && base > 0) {
+    players.push({ name, pos, base, sold: false, price: 0, soldToCaptainId: null });
+    // Admin page local list update (UI will also refresh from Firebase)
+    document.getElementById('playerList').innerHTML = players.map(p => `<li>${p.name} (${p.pos}) - $${p.base}</li>`).join('');
     document.getElementById('pName').value = '';
     document.getElementById('pPos').value = '';
     document.getElementById('pBase').value = '';
-    saveState();
+    updateFirebaseState();
+  } else {
+    alert("Please fill all player fields with valid data (Base price must be > 0).");
   }
 }
 
 function startAuction() {
-  currentIndex = -1;
+  currentIndex = -1; // nextPlayer will increment this to 0
   nextPlayer();
 }
 
 function nextPlayer() {
   currentIndex++;
-  if (currentIndex >= players.length) return alert('No more players.');
-  currentBid = players[currentIndex].base;
-  currentCaptain = '';
-  players[currentIndex].sold = false;
-  timerEndTime = null;
-  updateAll();
-  saveState();
+  if (currentIndex >= players.length) {
+    alert('No more players or auction ended.');
+    // Optionally update a state variable like auctionEnded = true
+    updateFirebaseState(); // Save the state where currentIndex is out of bounds
+    return;
+  }
+  
+  // Ensure player exists and reset relevant fields for bidding
+  if (players[currentIndex]) {
+    currentBid = players[currentIndex].base;
+    currentCaptain = '';
+    // players[currentIndex].sold = false; // Should already be false unless re-auctioning
+    timerEndTime = null;
+  } else {
+    // Should not happen if currentIndex is managed properly
+    alert('Error: Player not found at current index.');
+    return;
+  }
+  updateFirebaseState();
 }
 
 function placeBid(amount) {
   const urlParams = new URLSearchParams(window.location.search);
-  const c = urlParams.get('c') === '1' ? 'captain1' : 'captain2';
+  const captainIdParam = urlParams.get('c');
+  
+  if (!captainIdParam) {
+    // This function should ideally only be callable from a captain page with 'c' param
+    console.error("placeBid called without captain context.");
+    return;
+  }
+  const c = captainIdParam === '1' ? 'captain1' : 'captain2';
 
-  if (!players[currentIndex] || players[currentIndex].sold) return;
+  if (currentIndex < 0 || currentIndex >= players.length || !players[currentIndex] || players[currentIndex].sold) {
+    alert("Bidding is not active for this player.");
+    return;
+  }
 
   if (budgets[c] < currentBid + amount) {
     alert("Not enough budget!");
@@ -115,27 +176,36 @@ function placeBid(amount) {
 
   currentBid += amount;
   currentCaptain = c;
-  timerEndTime = Date.now() + 10000; // restart countdown
-  updateAll();
-  saveState();
+  timerEndTime = Date.now() + 10000; // 10 second countdown
+  updateFirebaseState();
 }
 
 function sellPlayer() {
-  if (!currentCaptain || !players[currentIndex]) return;
+  if (currentIndex < 0 || currentIndex >= players.length || !players[currentIndex] || players[currentIndex].sold) {
+    return; // Player not available or already sold
+  }
+  
   const player = players[currentIndex];
-  if (player.sold) return;
 
-  player.price = currentBid;
-  player.sold = true;
+  if (currentCaptain) { // If there was a bid
+    player.price = currentBid;
+    player.sold = true;
+    player.soldToCaptainId = currentCaptain;
 
-  if (!teams[currentCaptain].some(p => p.name === player.name)) {
-    teams[currentCaptain].push(player);
-    budgets[currentCaptain] -= currentBid;
+    // Deduct budget and add to team, ensure player not added twice
+    if (!teams[currentCaptain].some(p => p.name === player.name)) { // Basic check
+      teams[currentCaptain].push({ ...player }); // Add a copy
+      budgets[currentCaptain] -= currentBid;
+    }
+  } else {
+    // Player goes unsold if no currentCaptain (no bids)
+    // No changes to player.sold or teams/budgets needed for unsold
+    // Player remains in players array, admin can click "Next Player"
   }
 
-  timerEndTime = null;
-  updateAll();
-  saveState();
+  timerEndTime = null; // Stop the timer
+  // currentBid and currentCaptain will be reset by nextPlayer() or if admin starts new bid
+  updateFirebaseState();
 }
 
 function getTimeRemaining() {
@@ -143,87 +213,238 @@ function getTimeRemaining() {
   return Math.max(0, Math.floor((timerEndTime - Date.now()) / 1000));
 }
 
-function updateAll() {
-  const cp = players[currentIndex];
+function updateAllUI() {
+  const cp = (currentIndex >= 0 && currentIndex < players.length) ? players[currentIndex] : null;
 
-  // Admin
-  if (document.getElementById('currentPlayerDisplay')) {
-    if (cp?.sold) {
-      document.getElementById('currentPlayerDisplay').innerHTML = `<h3>Player Sold: ${cp.name} to ${currentCaptain} for $${currentBid}</h3>`;
-    } else if (cp) {
-      document.getElementById('currentPlayerDisplay').innerHTML = `<h3>Now Bidding: ${cp.name} (${cp.pos})<br/>Current Bid: $${currentBid} by ${caps[currentCaptain === 'captain1' ? 'c1' : 'c2'] || '---'}</h3><div id="timerDisplay">Time Left: ${getTimeRemaining()}s</div>`;
+  // Admin Page
+  const adminCurrentPlayerDisplay = document.getElementById('currentPlayerDisplay');
+  if (adminCurrentPlayerDisplay) {
+    const playerListElement = document.getElementById('playerList');
+    if (playerListElement) {
+      playerListElement.innerHTML = players.map(p => {
+        let soldInfo = '';
+        if (p.sold && p.soldToCaptainId) {
+          const captainName = caps[p.soldToCaptainId] || p.soldToCaptainId;
+          soldInfo = ` (Sold to ${captainName} for $${p.price})`;
+        }
+        return `<li>${p.name} (${p.pos}) - Base $${p.base}${soldInfo}</li>`;
+      }).join('');
     }
-    updateTeams();
+
+    // Update captain names and budgets inputs
+    const cap1Input = document.getElementById('captain1');
+    const budget1Input = document.getElementById('budget1');
+    const cap2Input = document.getElementById('captain2');
+    const budget2Input = document.getElementById('budget2');
+
+    if (cap1Input && document.activeElement !== cap1Input) cap1Input.value = caps.c1 || '';
+    if (budget1Input && document.activeElement !== budget1Input) budget1Input.value = budgets.captain1 || 0;
+    if (cap2Input && document.activeElement !== cap2Input) cap2Input.value = caps.c2 || '';
+    if (budget2Input && document.activeElement !== budget2Input) budget2Input.value = budgets.captain2 || 0;
+
+    if (cp?.sold) {
+      const soldToCaptainName = cp.soldToCaptainId ? (caps[cp.soldToCaptainId] || cp.soldToCaptainId) : 'N/A';
+      adminCurrentPlayerDisplay.innerHTML = `<h3>Player Sold: ${cp.name} to ${soldToCaptainName} for $${cp.price}</h3>`;
+    } else if (cp) {
+      const currentBidderName = currentCaptain ? (caps[currentCaptain] || currentCaptain) : '---';
+      adminCurrentPlayerDisplay.innerHTML = `<h3>Now Bidding: ${cp.name} (${cp.pos})<br/>Base Price: $${cp.base}<br/>Current Bid: $${currentBid} by ${currentBidderName}</h3><div id="timerDisplay">Time Left: ${getTimeRemaining()}s</div>`;
+    } else if (currentIndex >= players.length && players.length > 0) {
+      adminCurrentPlayerDisplay.innerHTML = `<h3>Auction Ended. All players processed.</h3>`;
+    } else {
+      adminCurrentPlayerDisplay.innerHTML = `<h3>Auction Not Started or No Player Selected</h3>`;
+    }
+    updateTeamsUI();
   }
 
-  // Captain
-  if (document.getElementById('currentPlayer')) {
+  // Captain Page
+  const captainCurrentPlayer = document.getElementById('currentPlayer');
+  if (captainCurrentPlayer) {
     if (cp?.sold) {
-      document.getElementById('currentPlayer').innerHTML = `<h3>Player Sold: ${cp.name} for $${currentBid}</h3>`;
+      const soldToCaptainName = cp.soldToCaptainId ? (caps[cp.soldToCaptainId] || cp.soldToCaptainId) : 'N/A';
+      captainCurrentPlayer.innerHTML = `<h3>Player Sold: ${cp.name} to ${soldToCaptainName} for $${cp.price}</h3>`;
     } else if (cp) {
-      document.getElementById('currentPlayer').innerHTML = `<h3>${cp.name} (${cp.pos}) - Base $${cp.base}<br/>Current Bid: $${currentBid} by ${caps[currentCaptain === 'captain1' ? 'c1' : 'c2'] || '---'}</h3><div id="timerDisplay">Time Left: ${getTimeRemaining()}s</div>`;
+      const currentBidderName = currentCaptain ? (caps[currentCaptain] || currentCaptain) : '---';
+      captainCurrentPlayer.innerHTML = `<h3>${cp.name} (${cp.pos}) - Base $${cp.base}<br/>Current Bid: $${currentBid} by ${currentBidderName}</h3><div id="timerDisplay">Time Left: ${getTimeRemaining()}s</div>`;
+    } else if (currentIndex >= players.length && players.length > 0) {
+      captainCurrentPlayer.innerHTML = `<h3>Auction Ended. No more players.</h3>`;
+    } else {
+      captainCurrentPlayer.innerHTML = `<h3>Waiting for next player...</h3>`;
     }
 
     const urlParams = new URLSearchParams(window.location.search);
-    const myTeam = urlParams.get('c') === '1' ? 'captain1' : 'captain2';
+    const myTeamId = urlParams.get('c') === '1' ? 'captain1' : 'captain2';
 
-    document.getElementById('budget').textContent = `Remaining Budget: $${budgets[myTeam]}`;
-    const teamList = teams[myTeam].map(p => `<li>${p.name} (${p.pos}) - $${p.price}</li>`).join('');
-    document.getElementById('yourTeam').innerHTML = teamList;
+    if (budgets[myTeamId] !== undefined) {
+      document.getElementById('budget').textContent = `Remaining Budget: $${budgets[myTeamId]}`;
+    }
+    if (teams[myTeamId]) {
+      const teamList = teams[myTeamId].map(p => `<li>${p.name} (${p.pos}) - $${p.price}</li>`).join('');
+      document.getElementById('yourTeam').innerHTML = teamList;
+    }
 
-    const upcoming = players.map((p, i) => {
-      const label = i === currentIndex ? '<strong>▶</strong> ' : '';
-      return `${label}${p.name} (${p.pos}) - $${p.base}`;
-    }).join('<br/>');
-    document.getElementById('upcomingPlayers').innerHTML = upcoming;
+    let upcomingHTML = '';
+    players.forEach((p, idx) => {
+        if (!p.sold) {
+            const label = idx === currentIndex ? '<strong>▶</strong> ' : '';
+            upcomingHTML += `<li>${label}${p.name} (${p.pos}) - Base $${p.base}</li>`;
+        }
+    });
+    document.getElementById('upcomingPlayers').innerHTML = `<ul>${upcomingHTML}</ul>`;
 
-    if (document.getElementById('captainNameDisplay')) {
-      const capName = myTeam === 'captain1' ? caps.c1 : caps.c2;
-      document.getElementById('captainNameDisplay').textContent = `Captain: ${capName}`;
+    const captainNameDisplay = document.getElementById('captainNameDisplay');
+    if (captainNameDisplay) {
+      const capName = myTeamId === 'captain1' ? caps.c1 : caps.c2;
+      captainNameDisplay.textContent = `Welcome, ${capName}`;
     }
   }
 
-  // Viewer
-  if (document.getElementById('livePlayer')) {
+  // Viewer Page
+  const viewerLivePlayer = document.getElementById('livePlayer');
+  if (viewerLivePlayer) {
     if (cp?.sold) {
-      document.getElementById('livePlayer').innerHTML = `<h3>Player Sold: ${cp.name} for $${currentBid}</h3>`;
+      const soldToCaptainName = cp.soldToCaptainId ? (caps[cp.soldToCaptainId] || cp.soldToCaptainId) : 'N/A';
+      viewerLivePlayer.innerHTML = `<h3>Player Sold: ${cp.name} to ${soldToCaptainName} for $${cp.price}</h3>`;
     } else if (cp) {
-      document.getElementById('livePlayer').innerHTML = `<h3>${cp.name} (${cp.pos}) - Current Bid: $${currentBid} by ${caps[currentCaptain === 'captain1' ? 'c1' : 'c2'] || '---'}</h3><div id="timerDisplay">Time Left: ${getTimeRemaining()}s</div>`;
+      const currentBidderName = currentCaptain ? (caps[currentCaptain] || currentCaptain) : '---';
+      viewerLivePlayer.innerHTML = `<h3>${cp.name} (${cp.pos}) - Base $${cp.base}<br/>Current Bid: $${currentBid} by ${currentBidderName}</h3><div id="timerDisplay">Time Left: ${getTimeRemaining()}s</div>`;
+    } else if (currentIndex >= players.length && players.length > 0) {
+      viewerLivePlayer.innerHTML = `<h3>Auction Ended.</h3>`;
+    } else {
+      viewerLivePlayer.innerHTML = `<h3>Auction starting soon...</h3>`;
     }
-    updateTeams();
+    updateTeamsUI();
   }
 }
 
-function updateTeams() {
-  const t1 = teams.captain1.map(p => `<li>${p.name} (${p.pos}) - $${p.price}</li>`).join('');
-  const t2 = teams.captain2.map(p => `<li>${p.name} (${p.pos}) - $${p.price}</li>`).join('');
+function updateTeamsUI() {
+  const t1 = teams.captain1 ? teams.captain1.map(p => `<li>${p.name} (${p.pos}) - $${p.price}</li>`).join('') : '';
+  const t2 = teams.captain2 ? teams.captain2.map(p => `<li>${p.name} (${p.pos}) - $${p.price}</li>`).join('') : '';
 
-  const list1 = document.getElementById('team1List') || document.getElementById('team1ViewerList');
-  const list2 = document.getElementById('team2List') || document.getElementById('team2ViewerList');
+  const list1Admin = document.getElementById('team1List');
+  const list2Admin = document.getElementById('team2List');
+  const list1Viewer = document.getElementById('team1ViewerList');
+  const list2Viewer = document.getElementById('team2ViewerList');
 
-  if (list1) list1.innerHTML = t1;
-  if (list2) list2.innerHTML = t2;
+  if (list1Admin) list1Admin.innerHTML = t1;
+  if (list2Admin) list2Admin.innerHTML = t2;
+  if (list1Viewer) list1Viewer.innerHTML = t1;
+  if (list2Viewer) list2Viewer.innerHTML = t2;
 
-  if (document.getElementById('team1Name')) document.getElementById('team1Name').textContent = caps.c1;
-  if (document.getElementById('team2Name')) document.getElementById('team2Name').textContent = caps.c2;
+  const team1NameAdmin = document.getElementById('team1Name');
+  const team2NameAdmin = document.getElementById('team2Name');
+  const team1NameViewer = document.getElementById('team1Viewer');
+  const team2NameViewer = document.getElementById('team2Viewer');
 
-  if (document.getElementById('team1Viewer')) document.getElementById('team1Viewer').textContent = caps.c1;
-  if (document.getElementById('team2Viewer')) document.getElementById('team2Viewer').textContent = caps.c2;
+  if (team1NameAdmin) team1NameAdmin.textContent = caps.c1 || 'Captain 1';
+  if (team2NameAdmin) team2NameAdmin.textContent = caps.c2 || 'Captain 2';
+  if (team1NameViewer) team1NameViewer.textContent = caps.c1 || 'Captain 1';
+  if (team2NameViewer) team2NameViewer.textContent = caps.c2 || 'Captain 2';
 }
 
 function resetAuction() {
-  localStorage.removeItem('volleyAuction');
-  location.reload();
+  const defaultState = {
+    players: [],
+    currentIndex: -1,
+    currentBid: 0,
+    currentCaptain: '',
+    teams: { captain1: [], captain2: [] },
+    caps: { c1: 'Captain 1', c2: 'Captain 2' },
+    budgets: { captain1: 10000, captain2: 10000 },
+    timerEndTime: null
+  };
+  set(auctionStateRef, defaultState).then(() => {
+    alert("Auction has been reset. The page will now reload to reflect the changes.");
+    location.reload();
+  }).catch((error) => {
+    console.error("Error resetting auction:", error);
+    alert("Failed to reset auction. Check console for details.");
+  });
 }
 
 window.onload = () => {
-  loadState();
-  updateAll();
-  setInterval(() => {
-    loadState();
-    if (timerEndTime && getTimeRemaining() === 0) {
-      sellPlayer();
+  console.log("window.onload event triggered."); // Diagnostic log
+
+  onValue(auctionStateRef, (snapshot) => {
+    console.log("Firebase onValue callback triggered."); // Diagnostic log
+    if (snapshot.exists()) {
+      const data = snapshot.val();
+      players = data.players || [];
+      currentIndex = data.currentIndex ?? -1; // Use nullish coalescing for 0 index
+      currentBid = data.currentBid || 0;
+      currentCaptain = data.currentCaptain || '';
+      teams = data.teams || { captain1: [], captain2: [] };
+      if (!Array.isArray(teams.captain1)) teams.captain1 = [];
+      if (!Array.isArray(teams.captain2)) teams.captain2 = [];
+      
+      caps = data.caps || { c1: 'Captain 1', c2: 'Captain 2' };
+      budgets = data.budgets || { captain1: 10000, captain2: 10000 };
+      timerEndTime = data.timerEndTime || null;
+      console.log("Local state updated from Firebase snapshot."); // Diagnostic log
+    } else {
+      console.log("Firebase snapshot does not exist. Initializing with default local state."); // Diagnostic log
+      // Firebase has no data, initialize with local defaults
+      // This state will be pushed to Firebase if an admin action (like generateLinks or addPlayer) occurs.
+      // Or, explicitly push default state here if desired for first-ever load.
+      // For now, local defaults are set, and updateAllUI will render this.
+      // If admin page is first to load and saves, it initializes Firebase.
+        players = [];
+        currentIndex = -1;
+        currentBid = 0;
+        currentCaptain = '';
+        teams = { captain1: [], captain2: [] };
+        caps = { c1: 'Captain 1', c2: 'Captain 2' };
+        budgets = { captain1: 10000, captain2: 10000 };
+        timerEndTime = null;
+        // Consider calling updateFirebaseState() here if you want to ensure
+        // Firebase is initialized with these defaults if it's empty.
+        // updateFirebaseState(); // This would make this client initialize Firebase.
     }
-    updateAll();
-  }, 1000); // Every second for timer + sync
+    updateAllUI();
+  });
+
+  setInterval(() => {
+    const timeLeft = getTimeRemaining();
+    if (timerEndTime && timeLeft === 0) {
+      // Only one client should ideally trigger sellPlayer.
+      // A simple check: if current player is not sold.
+      // More robust solutions involve Cloud Functions or admin-only trigger.
+      if (currentIndex >= 0 && currentIndex < players.length && players[currentIndex] && !players[currentIndex].sold) {
+        // Check if this client is an admin or has a specific role to sell.
+        // For simplicity, any client can trigger sell if timer ends. Firebase handles consistency.
+        sellPlayer();
+      }
+    }
+    // Update timer display continuously if it exists
+    const timerDisplays = document.querySelectorAll('#timerDisplay');
+    if (timerDisplays.length > 0) {
+        const cp = (currentIndex >= 0 && currentIndex < players.length) ? players[currentIndex] : null;
+        if (cp && !cp.sold && timerEndTime) {
+            timerDisplays.forEach(el => el.textContent = `Time Left: ${timeLeft}s`);
+        } else if (cp && cp.sold) {
+            timerDisplays.forEach(el => el.textContent = `Time Left: 0s`);
+        } else if (!cp && timeLeft === 0) { // No current player, timer display should be cleared or show 0
+             timerDisplays.forEach(el => el.textContent = `Time Left: 0s`);
+        }
+    }
+  }, 1000);
+
+  // Expose functions to global scope for HTML onclick handlers
+  window.generateLinks = generateLinks;
+  window.copyLink = copyLink;
+  window.addPlayer = addPlayer;
+  window.startAuction = startAuction;
+  window.nextPlayer = nextPlayer;
+  window.placeBid = placeBid;
+  window.resetAuction = resetAuction;
+  // sellPlayer is called internally by timer or admin action
+
+  console.log("Functions exposed to window object:", {
+    generateLinksExists: typeof window.generateLinks === 'function',
+    copyLinkExists: typeof window.copyLink === 'function',
+    addPlayerExists: typeof window.addPlayer === 'function',
+    startAuctionExists: typeof window.startAuction === 'function',
+    nextPlayerExists: typeof window.nextPlayer === 'function',
+    placeBidExists: typeof window.placeBid === 'function',
+    resetAuctionExists: typeof window.resetAuction === 'function',
+  }); // Diagnostic log
 };
