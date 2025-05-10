@@ -24,6 +24,12 @@ let currentBid = 0;
 let currentCaptain = '';
 let timerEndTime = null;
 
+let biddingPermissions = { // New state for controlling bidding
+  captain1: true,
+  captain2: true,
+  captain3: true
+};
+
 let teams = {
   captain1: [],
   captain2: [],
@@ -52,7 +58,8 @@ function updateFirebaseState() {
     teams,
     caps,
     budgets,
-    timerEndTime
+    timerEndTime,
+    biddingPermissions // Add to Firebase state
   };
   set(auctionStateRef, state);
 }
@@ -182,6 +189,12 @@ function placeBid(amount) {
     return;
   }
 
+  // Check bidding permission
+  if (!biddingPermissions[c]) {
+    alert(`Bidding is currently disabled for ${caps[c.replace('captain', 'c')] || c}.`);
+    return;
+  }
+
   if (currentIndex < 0 || currentIndex >= players.length || !players[currentIndex] || players[currentIndex].sold) {
     alert("Bidding is not active for this player.");
     return;
@@ -263,6 +276,15 @@ function updateAllUI() {
     if (budget2Input && document.activeElement !== budget2Input) budget2Input.value = budgets.captain2 || 0;
     if (cap3Input && document.activeElement !== cap3Input) cap3Input.value = caps.c3 || ''; // New
     if (budget3Input && document.activeElement !== budget3Input) budget3Input.value = budgets.captain3 || 0; // New
+
+    // Update "Control Bidding" checkboxes state
+    const c1AllowedCheckbox = document.getElementById('c1Allowed');
+    const c2AllowedCheckbox = document.getElementById('c2Allowed');
+    const c3AllowedCheckbox = document.getElementById('c3Allowed');
+
+    if (c1AllowedCheckbox && document.activeElement !== c1AllowedCheckbox) c1AllowedCheckbox.checked = biddingPermissions.captain1;
+    if (c2AllowedCheckbox && document.activeElement !== c2AllowedCheckbox) c2AllowedCheckbox.checked = biddingPermissions.captain2;
+    if (c3AllowedCheckbox && document.activeElement !== c3AllowedCheckbox) c3AllowedCheckbox.checked = biddingPermissions.captain3;
 
     if (cp?.sold) {
       const soldToCaptainName = cp.soldToCaptainId ? (caps[cp.soldToCaptainId.replace('captain','c')] || cp.soldToCaptainId) : 'N/A'; // Adjusted
@@ -391,7 +413,8 @@ function resetAuction() {
     teams: { captain1: [], captain2: [], captain3: [] }, // New
     caps: { c1: 'Captain 1', c2: 'Captain 2', c3: 'Captain 3' }, // New
     budgets: { captain1: 10000, captain2: 10000, captain3: 10000 }, // New
-    timerEndTime: null
+    timerEndTime: null,
+    biddingPermissions: { captain1: true, captain2: true, captain3: true } // Add to default state
   };
   set(auctionStateRef, defaultState).then(() => {
     alert("Auction has been reset. The page will now reload to reflect the changes.");
@@ -400,6 +423,14 @@ function resetAuction() {
     console.error("Error resetting auction:", error);
     alert("Failed to reset auction. Check console for details.");
   });
+}
+
+// Function to handle changes in bidding permission checkboxes
+function handlePermissionChange(captainKey, isChecked) {
+  if (biddingPermissions.hasOwnProperty(captainKey)) {
+    biddingPermissions[captainKey] = isChecked;
+    updateFirebaseState();
+  }
 }
 
 window.onload = () => {
@@ -421,6 +452,7 @@ window.onload = () => {
       caps = data.caps || { c1: 'Captain 1', c2: 'Captain 2', c3: 'Captain 3' }; // Updated
       budgets = data.budgets || { captain1: 10000, captain2: 10000, captain3: 10000 }; // Updated
       timerEndTime = data.timerEndTime || null;
+      biddingPermissions = data.biddingPermissions || { captain1: true, captain2: true, captain3: true }; // Load permissions
       console.log("Local state updated from Firebase snapshot."); // Diagnostic log
     } else {
       console.log("Firebase snapshot does not exist. Initializing with default local state."); // Diagnostic log
@@ -437,12 +469,28 @@ window.onload = () => {
         caps = { c1: 'Captain 1', c2: 'Captain 2', c3: 'Captain 3' }; // Updated
         budgets = { captain1: 10000, captain2: 10000, captain3: 10000 }; // Updated
         timerEndTime = null;
+        biddingPermissions = { captain1: true, captain2: true, captain3: true }; // Initialize permissions
         // Consider calling updateFirebaseState() here if you want to ensure
         // Firebase is initialized with these defaults if it's empty.
         // updateFirebaseState(); // This would make this client initialize Firebase.
     }
     updateAllUI();
   });
+
+  // Add event listeners for bidding permission checkboxes (Admin page)
+  const c1AllowedCheckbox = document.getElementById('c1Allowed');
+  const c2AllowedCheckbox = document.getElementById('c2Allowed');
+  const c3AllowedCheckbox = document.getElementById('c3Allowed');
+
+  if (c1AllowedCheckbox) {
+    c1AllowedCheckbox.addEventListener('change', (e) => handlePermissionChange('captain1', e.target.checked));
+  }
+  if (c2AllowedCheckbox) {
+    c2AllowedCheckbox.addEventListener('change', (e) => handlePermissionChange('captain2', e.target.checked));
+  }
+  if (c3AllowedCheckbox) {
+    c3AllowedCheckbox.addEventListener('change', (e) => handlePermissionChange('captain3', e.target.checked));
+  }
 
   setInterval(() => {
     const timeLeft = getTimeRemaining();
