@@ -15,6 +15,8 @@
       <label>Captain 1 Budget: <input id="budget1" type="number" value="10000"></label>
       <label>Captain 2 Name: <input id="captain2" type="text"></label>
       <label>Captain 2 Budget: <input id="budget2" type="number" value="10000"></label><br>
+      <label>Captain 3 Name: <input id="captain3" type="text"></label>
+      <label>Captain 3 Budget: <input id="budget3" type="number" value="10000"></label><br>
 
       <button onclick="generateLinks()">Generate Links</button>
       <div id="captainLinks"></div>
@@ -38,6 +40,7 @@
       <h3>Control Bidding</h3>
       <label><input type="checkbox" id="c1Allowed" checked> Allow Captain 1</label>
       <label><input type="checkbox" id="c2Allowed" checked> Allow Captain 2</label>
+      <label><input type="checkbox" id="c3Allowed" checked> Allow Captain 3</label>
     </div>
 
     <div id="currentPlayerDisplay"></div>
@@ -52,6 +55,10 @@
       <div>
         <h3 id="team2Name">Captain 2</h3>
         <ul id="team2List"></ul>
+      </div>
+      <div>
+        <h3 id="team3Name">Captain 3</h3>
+        <ul id="team3List"></ul>
       </div>
     </div>
     <button onclick="resetAuction()">Exit & Reset Auction</button>

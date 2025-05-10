@@ -26,17 +26,20 @@ let timerEndTime = null;
 
 let teams = {
   captain1: [],
-  captain2: []
+  captain2: [],
+  captain3: []
 };
 
 let caps = {
   c1: 'Captain 1',
-  c2: 'Captain 2'
+  c2: 'Captain 2',
+  c3: 'Captain 3'
 };
 
 let budgets = {
   captain1: 10000,
-  captain2: 10000
+  captain2: 10000,
+  captain3: 10000
 };
 
 // Function to write the current state to Firebase
@@ -58,11 +61,13 @@ function generateLinks() {
   try {
     const captain1Input = document.getElementById('captain1');
     const captain2Input = document.getElementById('captain2');
+    const captain3Input = document.getElementById('captain3'); // New
     const budget1Input = document.getElementById('budget1');
     const budget2Input = document.getElementById('budget2');
+    const budget3Input = document.getElementById('budget3'); // New
     const linksDiv = document.getElementById('captainLinks');
 
-    if (!captain1Input || !captain2Input || !budget1Input || !budget2Input || !linksDiv) {
+    if (!captain1Input || !captain2Input || !captain3Input || !budget1Input || !budget2Input || !budget3Input || !linksDiv) {
       console.error("generateLinks: One or more required HTML elements (captain inputs, budget inputs, or linksDiv) were not found.");
       alert("Error: Could not find necessary HTML elements to generate links. Please check the console.");
       return;
@@ -70,9 +75,11 @@ function generateLinks() {
 
     caps.c1 = captain1Input.value || 'Captain 1';
     caps.c2 = captain2Input.value || 'Captain 2';
+    caps.c3 = captain3Input.value || 'Captain 3'; // New
 
     budgets.captain1 = parseInt(budget1Input.value) || 10000;
     budgets.captain2 = parseInt(budget2Input.value) || 10000;
+    budgets.captain3 = parseInt(budget3Input.value) || 10000; // New
 
     // The existing base URL calculation logic is generally robust.
     // window.location.origin: e.g., "http://localhost:3000"
@@ -91,6 +98,7 @@ function generateLinks() {
     linksDiv.innerHTML = `
       <p>Captain 1: <input id="c1Link" value="${base}/captain.html?c=1" readonly /> <button onclick="copyLink('c1Link')">Copy</button></p>
       <p>Captain 2: <input id="c2Link" value="${base}/captain.html?c=2" readonly /> <button onclick="copyLink('c2Link')">Copy</button></p>
+      <p>Captain 3: <input id="c3Link" value="${base}/captain.html?c=3" readonly /> <button onclick="copyLink('c3Link')">Copy</button></p> 
       <p>Viewer Link: <input id="viewerLink" value="${base}/view.html" readonly /> <button onclick="copyLink('viewerLink')">Copy</button></p>
     `;
     // console.log('Generated links with base:', base); // For debugging
@@ -162,7 +170,17 @@ function placeBid(amount) {
     console.error("placeBid called without captain context.");
     return;
   }
-  const c = captainIdParam === '1' ? 'captain1' : 'captain2';
+  let c;
+  if (captainIdParam === '1') {
+    c = 'captain1';
+  } else if (captainIdParam === '2') {
+    c = 'captain2';
+  } else if (captainIdParam === '3') {
+    c = 'captain3'; // New
+  } else {
+    console.error("Invalid captain ID parameter:", captainIdParam);
+    return;
+  }
 
   if (currentIndex < 0 || currentIndex >= players.length || !players[currentIndex] || players[currentIndex].sold) {
     alert("Bidding is not active for this player.");
@@ -236,17 +254,21 @@ function updateAllUI() {
     const budget1Input = document.getElementById('budget1');
     const cap2Input = document.getElementById('captain2');
     const budget2Input = document.getElementById('budget2');
+    const cap3Input = document.getElementById('captain3'); // New
+    const budget3Input = document.getElementById('budget3'); // New
 
     if (cap1Input && document.activeElement !== cap1Input) cap1Input.value = caps.c1 || '';
     if (budget1Input && document.activeElement !== budget1Input) budget1Input.value = budgets.captain1 || 0;
     if (cap2Input && document.activeElement !== cap2Input) cap2Input.value = caps.c2 || '';
     if (budget2Input && document.activeElement !== budget2Input) budget2Input.value = budgets.captain2 || 0;
+    if (cap3Input && document.activeElement !== cap3Input) cap3Input.value = caps.c3 || ''; // New
+    if (budget3Input && document.activeElement !== budget3Input) budget3Input.value = budgets.captain3 || 0; // New
 
     if (cp?.sold) {
-      const soldToCaptainName = cp.soldToCaptainId ? (caps[cp.soldToCaptainId] || cp.soldToCaptainId) : 'N/A';
+      const soldToCaptainName = cp.soldToCaptainId ? (caps[cp.soldToCaptainId.replace('captain','c')] || cp.soldToCaptainId) : 'N/A'; // Adjusted
       adminCurrentPlayerDisplay.innerHTML = `<h3>Player Sold: ${cp.name} to ${soldToCaptainName} for $${cp.price}</h3>`;
     } else if (cp) {
-      const currentBidderName = currentCaptain ? (caps[currentCaptain] || currentCaptain) : '---';
+      const currentBidderName = currentCaptain ? (caps[currentCaptain.replace('captain','c')] || currentCaptain) : '---'; // Adjusted
       adminCurrentPlayerDisplay.innerHTML = `<h3>Now Bidding: ${cp.name} (${cp.pos})<br/>Base Price: $${cp.base}<br/>Current Bid: $${currentBid} by ${currentBidderName}</h3><div id="timerDisplay">Time Left: ${getTimeRemaining()}s</div>`;
     } else if (currentIndex >= players.length && players.length > 0) {
       adminCurrentPlayerDisplay.innerHTML = `<h3>Auction Ended. All players processed.</h3>`;
@@ -260,10 +282,10 @@ function updateAllUI() {
   const captainCurrentPlayer = document.getElementById('currentPlayer');
   if (captainCurrentPlayer) {
     if (cp?.sold) {
-      const soldToCaptainName = cp.soldToCaptainId ? (caps[cp.soldToCaptainId] || cp.soldToCaptainId) : 'N/A';
+      const soldToCaptainName = cp.soldToCaptainId ? (caps[cp.soldToCaptainId.replace('captain', 'c')] || cp.soldToCaptainId) : 'N/A'; // Adjusted for consistency
       captainCurrentPlayer.innerHTML = `<h3>Player Sold: ${cp.name} to ${soldToCaptainName} for $${cp.price}</h3>`;
     } else if (cp) {
-      const currentBidderName = currentCaptain ? (caps[currentCaptain] || currentCaptain) : '---';
+      const currentBidderName = currentCaptain ? (caps[currentCaptain.replace('captain', 'c')] || currentCaptain) : '---'; // Adjusted for consistency
       captainCurrentPlayer.innerHTML = `<h3>${cp.name} (${cp.pos}) - Base $${cp.base}<br/>Current Bid: $${currentBid} by ${currentBidderName}</h3><div id="timerDisplay">Time Left: ${getTimeRemaining()}s</div>`;
     } else if (currentIndex >= players.length && players.length > 0) {
       captainCurrentPlayer.innerHTML = `<h3>Auction Ended. No more players.</h3>`;
@@ -272,12 +294,19 @@ function updateAllUI() {
     }
 
     const urlParams = new URLSearchParams(window.location.search);
-    const myTeamId = urlParams.get('c') === '1' ? 'captain1' : 'captain2';
+    const captainIdParam = urlParams.get('c'); // Expected '1', '2', or '3'
+    let myTeamId = null;
+    let myCapKey = null;
 
-    if (budgets[myTeamId] !== undefined) {
+    if (captainIdParam && ['1', '2', '3'].includes(captainIdParam)) {
+        myTeamId = `captain${captainIdParam}`; // e.g., 'captain1'
+        myCapKey = `c${captainIdParam}`;       // e.g., 'c1'
+    }
+
+    if (myTeamId && budgets[myTeamId] !== undefined) {
       document.getElementById('budget').textContent = `Remaining Budget: $${budgets[myTeamId]}`;
     }
-    if (teams[myTeamId]) {
+    if (myTeamId && teams[myTeamId]) {
       const teamList = teams[myTeamId].map(p => `<li>${p.name} (${p.pos}) - $${p.price}</li>`).join('');
       document.getElementById('yourTeam').innerHTML = teamList;
     }
@@ -292,9 +321,12 @@ function updateAllUI() {
     document.getElementById('upcomingPlayers').innerHTML = `<ul>${upcomingHTML}</ul>`;
 
     const captainNameDisplay = document.getElementById('captainNameDisplay');
-    if (captainNameDisplay) {
-      const capName = myTeamId === 'captain1' ? caps.c1 : caps.c2;
+    if (captainNameDisplay && myCapKey && caps[myCapKey]) {
+      const capName = caps[myCapKey];
       captainNameDisplay.textContent = `Welcome, ${capName}`;
+    } else if (captainNameDisplay) {
+      // Fallback if captain info is not available
+      captainNameDisplay.textContent = `Welcome, Captain`;
     }
   }
 
@@ -302,10 +334,10 @@ function updateAllUI() {
   const viewerLivePlayer = document.getElementById('livePlayer');
   if (viewerLivePlayer) {
     if (cp?.sold) {
-      const soldToCaptainName = cp.soldToCaptainId ? (caps[cp.soldToCaptainId] || cp.soldToCaptainId) : 'N/A';
+      const soldToCaptainName = cp.soldToCaptainId ? (caps[cp.soldToCaptainId.replace('captain','c')] || cp.soldToCaptainId) : 'N/A'; // Adjusted
       viewerLivePlayer.innerHTML = `<h3>Player Sold: ${cp.name} to ${soldToCaptainName} for $${cp.price}</h3>`;
     } else if (cp) {
-      const currentBidderName = currentCaptain ? (caps[currentCaptain] || currentCaptain) : '---';
+      const currentBidderName = currentCaptain ? (caps[currentCaptain.replace('captain','c')] || currentCaptain) : '---'; // Adjusted
       viewerLivePlayer.innerHTML = `<h3>${cp.name} (${cp.pos}) - Base $${cp.base}<br/>Current Bid: $${currentBid} by ${currentBidderName}</h3><div id="timerDisplay">Time Left: ${getTimeRemaining()}s</div>`;
     } else if (currentIndex >= players.length && players.length > 0) {
       viewerLivePlayer.innerHTML = `<h3>Auction Ended.</h3>`;
@@ -319,26 +351,35 @@ function updateAllUI() {
 function updateTeamsUI() {
   const t1 = teams.captain1 ? teams.captain1.map(p => `<li>${p.name} (${p.pos}) - $${p.price}</li>`).join('') : '';
   const t2 = teams.captain2 ? teams.captain2.map(p => `<li>${p.name} (${p.pos}) - $${p.price}</li>`).join('') : '';
+  const t3 = teams.captain3 ? teams.captain3.map(p => `<li>${p.name} (${p.pos}) - $${p.price}</li>`).join('') : ''; // New
 
   const list1Admin = document.getElementById('team1List');
   const list2Admin = document.getElementById('team2List');
+  const list3Admin = document.getElementById('team3List'); // New
   const list1Viewer = document.getElementById('team1ViewerList');
   const list2Viewer = document.getElementById('team2ViewerList');
+  const list3Viewer = document.getElementById('team3ViewerList'); // New
 
   if (list1Admin) list1Admin.innerHTML = t1;
   if (list2Admin) list2Admin.innerHTML = t2;
+  if (list3Admin) list3Admin.innerHTML = t3; // New
   if (list1Viewer) list1Viewer.innerHTML = t1;
   if (list2Viewer) list2Viewer.innerHTML = t2;
+  if (list3Viewer) list3Viewer.innerHTML = t3; // New
 
   const team1NameAdmin = document.getElementById('team1Name');
   const team2NameAdmin = document.getElementById('team2Name');
+  const team3NameAdmin = document.getElementById('team3Name'); // New
   const team1NameViewer = document.getElementById('team1Viewer');
   const team2NameViewer = document.getElementById('team2Viewer');
+  const team3NameViewer = document.getElementById('team3Viewer'); // New
 
   if (team1NameAdmin) team1NameAdmin.textContent = caps.c1 || 'Captain 1';
   if (team2NameAdmin) team2NameAdmin.textContent = caps.c2 || 'Captain 2';
+  if (team3NameAdmin) team3NameAdmin.textContent = caps.c3 || 'Captain 3'; // New
   if (team1NameViewer) team1NameViewer.textContent = caps.c1 || 'Captain 1';
   if (team2NameViewer) team2NameViewer.textContent = caps.c2 || 'Captain 2';
+  if (team3NameViewer) team3NameViewer.textContent = caps.c3 || 'Captain 3'; // New
 }
 
 function resetAuction() {
@@ -347,9 +388,9 @@ function resetAuction() {
     currentIndex: -1,
     currentBid: 0,
     currentCaptain: '',
-    teams: { captain1: [], captain2: [] },
-    caps: { c1: 'Captain 1', c2: 'Captain 2' },
-    budgets: { captain1: 10000, captain2: 10000 },
+    teams: { captain1: [], captain2: [], captain3: [] }, // New
+    caps: { c1: 'Captain 1', c2: 'Captain 2', c3: 'Captain 3' }, // New
+    budgets: { captain1: 10000, captain2: 10000, captain3: 10000 }, // New
     timerEndTime: null
   };
   set(auctionStateRef, defaultState).then(() => {
@@ -372,12 +413,13 @@ window.onload = () => {
       currentIndex = data.currentIndex ?? -1; // Use nullish coalescing for 0 index
       currentBid = data.currentBid || 0;
       currentCaptain = data.currentCaptain || '';
-      teams = data.teams || { captain1: [], captain2: [] };
+      teams = data.teams || { captain1: [], captain2: [], captain3: [] }; // Updated
       if (!Array.isArray(teams.captain1)) teams.captain1 = [];
       if (!Array.isArray(teams.captain2)) teams.captain2 = [];
+      if (!Array.isArray(teams.captain3)) teams.captain3 = []; // New
       
-      caps = data.caps || { c1: 'Captain 1', c2: 'Captain 2' };
-      budgets = data.budgets || { captain1: 10000, captain2: 10000 };
+      caps = data.caps || { c1: 'Captain 1', c2: 'Captain 2', c3: 'Captain 3' }; // Updated
+      budgets = data.budgets || { captain1: 10000, captain2: 10000, captain3: 10000 }; // Updated
       timerEndTime = data.timerEndTime || null;
       console.log("Local state updated from Firebase snapshot."); // Diagnostic log
     } else {
@@ -391,9 +433,9 @@ window.onload = () => {
         currentIndex = -1;
         currentBid = 0;
         currentCaptain = '';
-        teams = { captain1: [], captain2: [] };
-        caps = { c1: 'Captain 1', c2: 'Captain 2' };
-        budgets = { captain1: 10000, captain2: 10000 };
+        teams = { captain1: [], captain2: [], captain3: [] }; // Updated
+        caps = { c1: 'Captain 1', c2: 'Captain 2', c3: 'Captain 3' }; // Updated
+        budgets = { captain1: 10000, captain2: 10000, captain3: 10000 }; // Updated
         timerEndTime = null;
         // Consider calling updateFirebaseState() here if you want to ensure
         // Firebase is initialized with these defaults if it's empty.
